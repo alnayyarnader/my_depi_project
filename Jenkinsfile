@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo 'Pulling code from repository...'
+                echo 'Pulling code from repository....'
                 git branch: 'main', credentialsId: 'gituser', url: 'https://github.com/alnayyarnader/my_depi_project.git'
                 sh 'pwd'
                 sh 'ls -la'
