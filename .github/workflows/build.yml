@@ -1,0 +1,31 @@
+name: CI_Pieline
+ 
+on:
+  push:
+    branches: 
+      - "*"
+  workflow_dispatch:
+ 
+ 
+jobs:
+ 
+  checkout:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v6.1.0
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v8.3.0
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_QUBE }}
+
+    - name: SonarQube Quality Gate check
+      id: sonarqube-quality-gate-check
+      uses: sonarsource/sonarqube-quality-gate-action@master
+      with:
+        pollingTimeoutSec: 600
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_QUBE }}
+ 
+    - name: "Example show SonarQube Quality Gate Status value"
+      run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
