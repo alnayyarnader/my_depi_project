@@ -1,17 +1,19 @@
-name: CI_Pieline
+name: ci_pipeline
  
 on:
   push:
     branches: 
       - "*"
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
- 
  
 jobs:
  
-  checkout:
+  build:
     runs-on: ubuntu-latest
     steps:
+    
     - name: Checkout Code
       uses: actions/checkout@v6.1.0
     - name: SonarQube Scan
