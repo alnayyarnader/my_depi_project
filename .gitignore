@@ -1,3 +1,23 @@
-my-aws-key
-my-aws-key.pub
-kind
+# SSH Keys & Secrets
+*.pem
+*.key
+my-aws-key*
+.env
+*vault_pass*
+
+# Terraform binary plugins & state files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
+
+# Ansible retry & external roles
+*.retry
+ansible/.external_roles/
+ansible/.collections/
+
+# Node / Python build artifacts
+node_modules/
+__pycache__/
+*.pyc
