@@ -50,15 +50,15 @@ jobs:
       # =========================================================================
       # OPTION A: CHECK STATUS ONLY (When 'status' is selected in UI)
       # =========================================================================
-       - name: 4A. Check Detailed Infrastructure & Cost Status
-         if: ${{ github.event.inputs.action == 'status' }}
-         working-directory: ./terraform
-         run: |
-           echo "=== REFRESHING LIVE AWS DATA ==="
-           terraform init
-           terraform apply -refresh-only -auto-approve
-           echo "=== GENERATING DETAILED INFRASTRUCTURE & COST REPORT ==="
-           terraform output infrastructure_audit_report
+      - name: 4A. Check Detailed Infrastructure & Cost Status
+        if: ${{ github.event.inputs.action == 'status' }}
+        working-directory: ./terraform
+        run: |
+          echo "=== REFRESHING LIVE AWS DATA ==="
+          terraform init
+          terraform apply -refresh-only -auto-approve
+          echo "=== GENERATING DETAILED INFRASTRUCTURE & COST REPORT ==="
+          terraform output infrastructure_audit_report
            
       # =========================================================================
       # OPTION B: CLEAN UP / DESTROY ALL INFRASTRUCTURE (When 'destroy' is selected)
