@@ -65,7 +65,7 @@ data "aws_ami" "ubuntu" {
 # 2. Create the EC2 Instance and attach the Security Group
 resource "aws_instance" "my_server" {
   ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.small"
+  instance_type = "t3.micro"
 
   vpc_security_group_ids = [aws_security_group.allow_ssh.id]
   key_name               = "depi_locally_generated_ssh_public_key"
