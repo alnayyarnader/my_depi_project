@@ -1,4 +1,4 @@
-name: ci_pipeline
+name: cicd
  
 on:
   push:
@@ -31,6 +31,45 @@ jobs:
  
     - name: "Example show SonarQube Quality Gate Status value"
       run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+
+
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: Checkout Code
+      uses: actions/checkout@v6.1.0
+
+    - name: Run Ansible Playbook (RAM-only Vault Decryption)
+      working-directory: ./ansible
+      env:
+        VAULT_PASS: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+      run: |
+        ansible-playbook -i inventories/production playbooks/main.yml \
+          --vault-password-file <(echo "$VAULT_PASS")
+
+    - name: Provision AWS Infrastructure with Terraform
+      working-directory: ./terraform
+      run: |
+         terraform init
+         terraform apply -auto-approve
+         # Save as a normal Linux environment variable for all future steps:
+         echo "EC2_IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
+         
+    - name: Wait for EC2 SSH Port 22 to be Ready
+      run: |
+        #Use $EC2_IP directly like normal Bash!
+        timeout 120 bash -c 'until nc -z -v -w5 $EC2_IP 22; do sleep 5; done'
+
+    - name: Run Ansible Playbook on New EC2 Instance
+      working-directory: ./ansible
+      env:
+        VAULT_PASS: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+      run: |
+        #Use $EC2_IP directly here too!
+        ansible-playbook playbooks/playbook.yml \
+          -e "ansible_host=$EC2_IP" \
+          --vault-password-file <(echo "$VAULT_PASS")
 
 
   deploy:
