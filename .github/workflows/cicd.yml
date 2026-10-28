@@ -7,49 +7,110 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
- 
+    inputs:
+      action:
+        description: 'Choose Infrastructure Action'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - status
+          - destroy
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  # Built-in variable that silently connects Terraform CLI to HCP Terraform state:
+  TF_TOKEN_app_terraform_io: ${{ secrets.depi_terraform_API_TOKEN }}
+
 jobs:
- 
-  build:
+  manage-infrastructure:
+    name: "Run Action: ${{ github.event.inputs.action || 'deploy' }}"
     runs-on: ubuntu-latest
+
     steps:
-    
-    - name: Checkout Code
-      uses: actions/checkout@v6.1.0
-    - name: SonarQube Scan
-      uses: SonarSource/sonarqube-scan-action@v8.3.0
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_QUBE }}
+      # =========================================================================
+      # STEP 1: Checkout Code & Install Terraform
+      # =========================================================================
+      - name: 1. Checkout GitHub Repository
+        uses: actions/checkout@v4
 
-    - name: SonarQube Quality Gate check
-      id: sonarqube-quality-gate-check
-      uses: sonarsource/sonarqube-quality-gate-action@master
-      with:
-        pollingTimeoutSec: 600
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_QUBE }}
- 
-    - name: "Example show SonarQube Quality Gate Status value"
-      run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+      - name: 2. Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false # Required so 'terraform output -raw' returns a clean IP
 
+      - name: 3. Initialize Terraform & Fetch State from HCP Cloud
+        working-directory: ./terraform
+        run: |
+          terraform init
 
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    
-    - name: Checkout Code
-      uses: actions/checkout@v6.1.0
+      # =========================================================================
+      # OPTION A: CHECK STATUS ONLY (When 'status' is selected in UI)
+      # =========================================================================
+      - name: 4A. Check Live Infrastructure Status
+        if: ${{ github.event.inputs.action == 'status' }}
+        working-directory: ./terraform
+        run: |
+          echo "=== LIVE RESOURCES IN HCP TERRAFORM STATE ==="
+          terraform state list || echo "No resources currently deployed."
+          echo "=== CURRENT OUTPUTS ==="
+          terraform output || true
+          echo "=== DRIFT CHECK (TERRAFORM PLAN) ==="
+          terraform plan
 
-    - name: Provision AWS Infrastructure with Terraform
-      working-directory: ./terraform
-      run: |
-         terraform init
-         terraform apply -auto-approve
-         #Save as a normal Linux environment variable for all future steps:
-         echo "EC2_IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
-         
-    - name: Wait for EC2 SSH Port 22 to be Ready
-      run: |
-        #Use $EC2_IP directly like normal Bash!
-        timeout 120 bash -c 'until nc -z -v -w5 $EC2_IP 22; do sleep 5; done'
+      # =========================================================================
+      # OPTION B: CLEAN UP / DESTROY ALL INFRASTRUCTURE (When 'destroy' is selected)
+      # =========================================================================
+      - name: 4B. Destroy All AWS Resources & Update HCP State
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        working-directory: ./terraform
+        run: |
+          echo "Destroying all AWS resources tracked in HCP Terraform..."
+          terraform destroy -auto-approve
+          echo "All AWS infrastructure has been cleanly terminated!"
 
+      # =========================================================================
+      # OPTION C: DEPLOY INFRASTRUCTURE + ANSIBLE (On git push OR 'deploy' selected)
+      # =========================================================================
+      - name: 4C. Provision AWS Infrastructure (Terraform Apply)
+        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
+        working-directory: ./terraform
+        run: |
+          terraform apply -auto-approve
+          echo "EC2_IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
+
+      - name: 5. Configure SSH Key for Ansible
+        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: 6. Inject EC2_IP into Ansible hosts.yml & Wait for SSH
+        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
+        working-directory: ./ansible
+        run: | 
+          cat << EOF > inventories/production/hosts.yml
+          all:
+            hosts:
+              ec2_server:
+                ansible_host: $EC2_IP
+          EOF
+          echo "=== Updated inventories/production/hosts.yml ==="
+          cat inventories/production/hosts.yml
+          echo "Waiting for SSH port 22 on $EC2_IP..."
+          timeout 120 bash -c "until nc -z -v -w5 $EC2_IP 22; do sleep 5; done"
+
+          
+      - name: 7. Run Ansible Playbook (Decrypt Vault in RAM)
+        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
+        working-directory: ./ansible
+        env:
+          VAULT_PASS: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          ansible-playbook playbooks/playbook.yml \
+            --private-key ~/.ssh/id_rsa \
+            --vault-password-file <(echo "$VAULT_PASS")
