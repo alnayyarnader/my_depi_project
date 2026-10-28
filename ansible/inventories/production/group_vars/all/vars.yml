@@ -1,0 +1,7 @@
+# ansible/inventories/production/group_vars/all/vars.yml
+---
+app_name: "depi-3tier-app"
+db_name: "app_db"
+db_user: "postgres"
+# Reference the encrypted variable from secrets.yml:
+db_password: "{{ vault_db_password }}"
