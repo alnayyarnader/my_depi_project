@@ -1,8 +1,4 @@
-# this to link my terraform config with terraform cloud to fetch my terraform stat into github actions
-# organization and workspace names are found in terraform cloud webpage
-
 terraform {
-
   required_version = ">= 1.5.0"
 
   cloud {
@@ -21,26 +17,27 @@ terraform {
   }
 }
 
+provider "aws" {
+  region = "eu-north-1"
+}
 
-# 1. Create the Security Group via Terraform (100% Free)
+# 1. Create the Security Group via Terraform
 resource "aws_security_group" "allow_ssh" {
   name        = "free-tier-ssh-sg"
   description = "Allow inbound SSH traffic"
 
-  # Inbound Rule: Allow SSH on Port 22
   ingress {
     description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Tip: Replace with ["YOUR_PUBLIC_IP/32"] for tighter security
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Outbound Rule: Allow the server to reach the internet (for apt update, git, etc.)
   egress {
     from_port   = 0
     to_port     = 0
-    protocol    = "-1" # "-1" means all protocols/ports
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -49,16 +46,29 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
-# 2. Create the EC2 Instance and attach the Security Group above
+# Define the AMI dynamically
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# 2. Create the EC2 Instance and attach the Security Group
 resource "aws_instance" "my_server" {
   ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
+  instance_type = "t3.small"
 
-  # Attach the Security Group dynamically by referencing the resource above
   vpc_security_group_ids = [aws_security_group.allow_ssh.id]
-
-  # Optional: If you want to SSH in, add an SSH key pair name too
-  key_name = "depi_locally_generated_ssh_public_key"
+  key_name               = "depi_locally_generated_ssh_public_key"
 
   credit_specification {
     cpu_credits = "standard"
@@ -73,4 +83,9 @@ resource "aws_instance" "my_server" {
   tags = {
     Name = "Free-Tier-Ubuntu-Server"
   }
+}
+
+# 3. OUTPUT THE IP FOR ANSIBLE:
+output "public_ip" {
+  value = aws_instance.my_server.public_ip
 }
