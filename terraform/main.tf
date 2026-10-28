@@ -1,3 +1,27 @@
+# this to link my terraform config with terraform cloud to fetch my terraform stat into github actions
+# organization and workspace names are found in terraform cloud webpage
+
+terraform {
+
+  required_version = ">= 1.5.0"
+
+  cloud {
+    organization = "my-depi-project"
+
+    workspaces {
+      name = "depi-aws-ec2-instance"
+    }
+  }
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+
 # 1. Create the Security Group via Terraform (100% Free)
 resource "aws_security_group" "allow_ssh" {
   name        = "free-tier-ssh-sg"
