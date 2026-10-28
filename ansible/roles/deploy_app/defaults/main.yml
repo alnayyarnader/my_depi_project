@@ -1,0 +1,19 @@
+# ansible/roles/deploy_app/defaults/main.yml
+---
+# Remote directories on the EC2 server
+app_base_dir: "/opt/depi-app"
+k8s_remote_dir: "/home/ubuntu/k8s"
+remote_user: "ubuntu"
+
+# Container & Image defaults (overridden by group_vars or CI/CD -e flags)
+dockerhub_user: "your_dockerhub_username"
+image_tag: "latest"
+
+# Database non-sensitive defaults (overridden if defined in group_vars/all/vars.yml)
+db_name: "depi_db"
+db_user: "postgres"
+db_port: 5432
+
+# Application ports
+frontend_port: 80
+backend_port: 5000
