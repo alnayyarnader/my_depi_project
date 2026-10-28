@@ -52,3 +52,11 @@ output "infrastructure_audit_report" {
     }
   }
 }
+
+# SECTION C: Dedicated Clear Output for Availability Zones (Prevents Masking/Truncation)
+output "exact_availability_zones" {
+  description = "Full, unmasked availability zone mapping for all active instances"
+  value = {
+    for id, inst in data.aws_instance.ec2_details : id => inst.availability_zone
+  }
+}
