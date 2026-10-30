@@ -1,0 +1,14 @@
+- name: Apply Backend Deployment
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ role_path }}/files/backend-deployment.yaml"
+
+- name: Apply Backend Service
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ role_path }}/files/backend-service.yaml"
+
+- name: Apply Backend Network Policy
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ role_path }}/files/backend-network-policy.yaml"

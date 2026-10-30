@@ -1,0 +1,5 @@
+- name: Apply ingress manifest dynamically based on the chosen environment
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ app_namespace }}"
+    definition: "{{ lookup('template', 'ingress.yaml') | from_yaml }}"

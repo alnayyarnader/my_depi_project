@@ -1,0 +1,20 @@
+---
+- name: Create Kind cluster using config file
+  ansible.builtin.command:
+    cmd: "kind create cluster --config={{ role_path }}/files/kind-config.yaml"
+  register: cluster_creation
+  changed_when: "'Creating cluster' in cluster_creation.stdout"
+  failed_when: 
+    - cluster_creation.rc != 0
+    - "'already exist' not in cluster_creation.stderr"
+
+- name: Deploy Nginx Ingress Controller
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+
+
+- name: Apply namespace manifest dynamically based on the chosen environment
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'namespace.yaml') | from_yaml }}"

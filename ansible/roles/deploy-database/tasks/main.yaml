@@ -1,0 +1,14 @@
+- name: Apply Database Deployment
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ role_path }}/files/database-deployment.yaml"
+
+- name: Apply Database Service
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ role_path }}/files/database-service.yaml"
+
+- name: Apply Database Network Policy
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ role_path }}/files/database-network-policy.yaml"
