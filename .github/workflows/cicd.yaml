@@ -26,13 +26,52 @@ env:
   TF_TOKEN_app_terraform_io: ${{ secrets.depi_terraform_API_TOKEN }}
 
 jobs:
-  manage-infrastructure:
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+    # Build and Push Backend Image
+    - name: Build and Push Backend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_HUB_USERNAME }}/depi-backend:latest
+          ${{ secrets.DOCKER_HUB_USERNAME }}/depi-backend:${{ github.sha }}
+
+    # Build and Push Frontend Image
+    - name: Build and Push Frontend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_HUB_USERNAME }}/depi-frontend:latest
+          ${{ secrets.DOCKER_HUB_USERNAME }}/depi-frontend:${{ github.sha }}
+
+
+  provision:
     name: "Run Action: ${{ github.event.inputs.action || 'deploy' }}"
     runs-on: ubuntu-latest
 
     steps:
       # =========================================================================
-      # STEP 1: Checkout Code & Install Terraform
+      # Checkout Code & Install Terraform
       # =========================================================================
       - name: 1. Checkout GitHub Repository
         uses: actions/checkout@v4
@@ -48,7 +87,7 @@ jobs:
           terraform init
 
       # =========================================================================
-      # OPTION A: CHECK STATUS ONLY (When 'status' is selected in UI)
+      # CHECK STATUS ONLY (When 'status' is selected in UI)
       # =========================================================================
       - name: 4A. Check Detailed Infrastructure & Cost Status
         if: ${{ github.event.inputs.action == 'status' }}
@@ -61,9 +100,9 @@ jobs:
           terraform output infrastructure_audit_report
            
       # =========================================================================
-      # OPTION B: CLEAN UP / DESTROY ALL INFRASTRUCTURE (When 'destroy' is selected)
+      # CLEAN UP / DESTROY ALL INFRASTRUCTURE (When 'status' is selected in UI)
       # =========================================================================
-      - name: 4B. Destroy All AWS Resources & Update HCP State
+      - name: Destroy All AWS Resources & Update HCP State
         if: ${{ github.event.inputs.action == 'destroy' }}
         working-directory: ./terraform
         run: |
@@ -72,7 +111,7 @@ jobs:
           echo "All AWS infrastructure has been cleanly terminated!"
 
       # =========================================================================
-      # OPTION C: DEPLOY INFRASTRUCTURE + ANSIBLE (On git push OR 'deploy' selected)
+      # DEPLOY INFRASTRUCTURE + ANSIBLE (When 'status' is selected in UI)
       # =========================================================================
       - name: 4C. Provision AWS Infrastructure (Terraform Apply)
         if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
@@ -103,13 +142,26 @@ jobs:
           echo "Waiting for SSH port 22 on $EC2_IP..."
           timeout 120 bash -c "until nc -z -v -w5 $EC2_IP 22; do sleep 5; done"
 
-          
-      - name: 7. Run Ansible Playbook (Decrypt Vault in RAM)
-        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH Private Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPI_LOCALLY_GENERATED_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Run Ansible Playbook (Decrypt Vault in RAM)
         working-directory: ./ansible
         env:
           VAULT_PASS: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
-          ansible-playbook playbooks/playbook.yml \
+          ansible-playbook playbooks/playbook.yaml \
+            -i inventories/production/hosts.yaml \
             --private-key ~/.ssh/id_rsa \
             --vault-password-file <(echo "$VAULT_PASS")
