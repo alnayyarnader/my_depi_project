@@ -1,14 +1,19 @@
 - name: Apply Database Deployment
   kubernetes.core.k8s:
     state: present
-    src: "{{ role_path }}/files/database-deployment.yaml"
+    definition: "{{ lookup('template', 'database-deployment.yaml') | from_yaml }}"
+
+- name: Apply Database PVC
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'database-persistentvolumeclaim.yaml') | from_yaml }}"
 
 - name: Apply Database Service
   kubernetes.core.k8s:
     state: present
-    src: "{{ role_path }}/files/database-service.yaml"
+    definition: "{{ lookup('template', 'database-service.yaml') | from_yaml }}"
 
 - name: Apply Database Network Policy
   kubernetes.core.k8s:
     state: present
-    src: "{{ role_path }}/files/database-network-policy.yaml"
+    definition: "{{ lookup('template', 'database-network-policy.yaml') | from_yaml }}"

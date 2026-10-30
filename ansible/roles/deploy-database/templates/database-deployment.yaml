@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-deployment
+  namespace: "{{ app_environment }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: database
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - configMapRef:
+            name: "{{ app_environment }}-configmap"
+        - secretRef:
+            name: "{{ app_environment }}-secrets"
+        # --- container side directory to be persistent and mapped to the pod volume database-storage ---
+        volumeMounts:
+        - name: database-storage
+          mountPath: /var/lib/postgresql/data
+      # --- pod persistent volume named database-storage at the POD Level ---
+      volumes:
+      - name: database-storage
+        persistentVolumeClaim:
+          claimName: database-pvc

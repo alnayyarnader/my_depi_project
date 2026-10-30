@@ -1,9 +1,9 @@
 - name: Apply Frontend Deployment
   kubernetes.core.k8s:
     state: present
-    src: "{{ role_path }}/files/frontend-deployment.yaml"
+    definition: "{{ lookup('template', 'frontend-depolyment.yaml') | from_yaml }}"
 
 - name: Apply Frontend Service
   kubernetes.core.k8s:
     state: present
-    src: "{{ role_path }}/files/frontend-service.yaml"
+    definition: "{{ lookup('template', 'frontend-service.yaml') | from_yaml }}"

@@ -1,7 +1,11 @@
----
+- name: Render Kind config template to resolve the app_environment variable at kind-config.yaml
+  ansible.builtin.template:
+    src: kind-config.yaml
+    dest: /tmp/kind-config.yaml
+
 - name: Create Kind cluster using config file
   ansible.builtin.command:
-    cmd: "kind create cluster --config={{ role_path }}/files/kind-config.yaml"
+    cmd: "kind create cluster --config=/tmp/kind-config.yaml"
   register: cluster_creation
   changed_when: "'Creating cluster' in cluster_creation.stdout"
   failed_when: 
@@ -13,8 +17,17 @@
     state: present
     src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 
-
-- name: Apply namespace manifest dynamically based on the chosen environment
+- name: Apply Namespace
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'namespace.yaml') | from_yaml }}"
+
+- name: Apply ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'config.yaml') | from_yaml }}"
+
+- name: Apply Secrets
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'secrets.yaml') | from_yaml }}"
