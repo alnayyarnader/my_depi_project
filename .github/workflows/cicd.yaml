@@ -5,9 +5,18 @@ on:
     branches: 
       - "*"
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
   workflow_dispatch:
     inputs:
+      target_env:
+        description: 'Select Target Infrastructure'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - dev
       action:
         description: 'Choose Infrastructure Action'
         required: true
@@ -22,12 +31,12 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-  # Built-in variable that silently connects Terraform CLI to HCP Terraform state:
   TF_TOKEN_app_terraform_io: ${{ secrets.depi_terraform_API_TOKEN }}
 
 jobs:
 
   build-and-push:
+    if: github.event_name == 'push' || github.event.inputs.action == 'deploy'
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
@@ -65,21 +74,20 @@ jobs:
           ${{ secrets.DOCKER_HUB_USERNAME }}/depi-frontend:${{ github.sha }}
 
 
-  provision:
+  provisioning-and-deployment:
     name: "Run Action: ${{ github.event.inputs.action || 'deploy' }}"
     runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: always() && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped')
 
     steps:
-      # =========================================================================
-      # Checkout Code & Install Terraform
-      # =========================================================================
       - name: 1. Checkout GitHub Repository
         uses: actions/checkout@v4
 
       - name: 2. Setup Terraform CLI
         uses: hashicorp/setup-terraform@v4
         with:
-          terraform_wrapper: false # Required so 'terraform output -raw' returns a clean IP
+          terraform_wrapper: false
 
       - name: 3. Initialize Terraform & Fetch State from HCP Cloud
         working-directory: ./terraform
@@ -87,9 +95,9 @@ jobs:
           terraform init
 
       # =========================================================================
-      # CHECK STATUS ONLY (When 'status' is selected in UI)
+      # CHECK STATUS ONLY
       # =========================================================================
-      - name: 4A. Check Detailed Infrastructure & Cost Status
+      - name: Check Detailed Infrastructure & Cost Status
         if: ${{ github.event.inputs.action == 'status' }}
         working-directory: ./terraform
         run: |
@@ -100,7 +108,7 @@ jobs:
           terraform output infrastructure_audit_report
            
       # =========================================================================
-      # CLEAN UP / DESTROY ALL INFRASTRUCTURE (When 'status' is selected in UI)
+      # CLEAN UP / DESTROY ALL INFRASTRUCTURE
       # =========================================================================
       - name: Destroy All AWS Resources & Update HCP State
         if: ${{ github.event.inputs.action == 'destroy' }}
@@ -111,9 +119,9 @@ jobs:
           echo "All AWS infrastructure has been cleanly terminated!"
 
       # =========================================================================
-      # DEPLOY INFRASTRUCTURE + ANSIBLE (When 'status' is selected in UI)
+      # DEPLOY INFRASTRUCTURE + ANSIBLE
       # =========================================================================
-      - name: 4C. Provision AWS Infrastructure (Terraform Apply)
+      - name: Provision AWS Infrastructure (Terraform Apply)
         if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         working-directory: ./terraform
         run: |
@@ -124,44 +132,36 @@ jobs:
         if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.DEPI_LOCALLY_GENERATED_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: 6. Inject EC2_IP into Ansible hosts.yml & Wait for SSH
+      - name: 6. Inject EC2_IP into Ansible hosts.yaml & Wait for SSH
         if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
+        env:
+          TARGET_ENV: ${{ github.event.inputs.target_env || 'production' }}
         working-directory: ./ansible
         run: | 
-          cat << EOF > inventories/production/hosts.yml
+          mkdir -p inventories/$TARGET_ENV
+          cat << EOF > inventories/$TARGET_ENV/hosts.yaml
           all:
             hosts:
               ec2_server:
                 ansible_host: $EC2_IP
           EOF
-          echo "=== Updated inventories/production/hosts.yml ==="
-          cat inventories/production/hosts.yml
+          echo "=== Updated inventories/$TARGET_ENV/hosts.yaml ==="
+          cat inventories/$TARGET_ENV/hosts.yaml
           echo "Waiting for SSH port 22 on $EC2_IP..."
           timeout 120 bash -c "until nc -z -v -w5 $EC2_IP 22; do sleep 5; done"
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up SSH Private Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPI_LOCALLY_GENERATED_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-      - name: Run Ansible Playbook (Decrypt Vault in RAM)
+      - name: 7. Run Ansible Playbook (Decrypt Vault in RAM)
+        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         working-directory: ./ansible
         env:
           VAULT_PASS: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          TARGET_ENV: ${{ github.event.inputs.target_env || 'production' }}
         run: |
+          echo "Targeting Environment: $TARGET_ENV"
           ansible-playbook playbooks/playbook.yaml \
-            -i inventories/production/hosts.yaml \
+            -i inventories/$TARGET_ENV/hosts.yaml \
             --private-key ~/.ssh/id_rsa \
             --vault-password-file <(echo "$VAULT_PASS")
