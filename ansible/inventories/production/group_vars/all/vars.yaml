@@ -1,9 +1,8 @@
-# ansible/inventories/production/group_vars/all/vars.yml
----
-app_name: "depi-3tier-app"
-db_name: "app_db"
+app_environment: "production"
+
+# Unified 3-Tier Application Configuration
+backend_port: "5000"
+db_host: "database-svc"
+db_port: "5432"
+db_name: "postgres"
 db_user: "postgres"
-# Reference the encrypted variable from secrets.yml:
-db_password: "{{ vault_db_password }}"
-# to be changed in testing or staging or dev folder in the file >> inventories/(production)/group_vars/all/vars.yaml
-app_environment: production
