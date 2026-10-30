@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3-Tier Time Logger</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f4f4f9; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 400px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        ul { padding-left: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Timestamp Logger</h2>
+        <button onclick="saveTime()">Save Current Time</button>
+        <h3>Saved Records:</h3>
+        <ul id="records-list">Loading...</ul>
+    </div>
+
+    <script>
+        async function fetchRecords() {
+            try {
+                const response = await fetch('/api/records');
+                const records = await response.json();
+                const list = document.getElementById('records-list');
+                list.innerHTML = '';
+                records.forEach(r => {
+                    const li = document.createElement('li');
+                    li.textContent = `Record #${r.id} saved at: ${r.saved_at}`;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                console.error('Error fetching records:', err);
+            }
+        }
+
+        async function saveTime() {
+            try {
+                await fetch('/api/records', { method: 'POST' });
+                fetchRecords();
+            } catch (err) {
+                console.error('Error saving time:', err);
+            }
+        }
+
+        // Load records when page opens
+        fetchRecords();
+    </script>
+</body>
+</html>
