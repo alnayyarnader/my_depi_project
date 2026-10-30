@@ -1,0 +1,9 @@
+- hosts: all
+  become: yes
+  roles:
+    - prerequisites
+    - k8s-cluster-creation
+    - deploy-database
+    - deploy-backend
+    - deploy-frontend
+    - k8s-ingress-creation
