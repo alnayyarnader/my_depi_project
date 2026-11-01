@@ -1,7 +1,8 @@
-- name: Install system prerequisite packages
+- name: Update apt cache and install system prerequisite packages
   ansible.builtin.apt:
     name: "{{ item }}"
     state: present
+    update_cache: true
   loop:
     - curl
     - apt-transport-https
