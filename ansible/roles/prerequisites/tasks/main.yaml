@@ -1,8 +1,14 @@
-- name: Run prerequisite checks and system updates
-  ansible.builtin.shell: |
-    echo "Starting system prerequisite checks..."
-    sudo apt-get update -y
-    sudo apt-get install -y curl apt-transport-https ca-certificates gnupg
+- name: Install system prerequisite packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - curl
+    - apt-transport-https
+    - ca-certificates
+    - gnupg
+  notify: Restart sshd
+
 
 - name: Run docker installation script
   ansible.builtin.script: setup-docker.bash
