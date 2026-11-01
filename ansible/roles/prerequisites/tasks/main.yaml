@@ -28,7 +28,6 @@
     update_cache: true
   notify: Restart sshd
 
-
 - name: Run installation script of kind and kubectl
   ansible.builtin.script: setup-kind.sh
   register: kind_script_result
