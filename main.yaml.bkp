@@ -1,0 +1,30 @@
+- name: Update apt cache and install system prerequisite packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop:
+    - curl
+    - apt-transport-https
+    - ca-certificates
+    - gnupg
+  notify: Restart sshd
+
+
+- name: Run docker installation script
+  ansible.builtin.script: setup-docker.bash
+  args:
+    executable: /bin/bash
+  register: docker_script_result
+
+- name: Display Docker script output
+  ansible.builtin.debug:
+    var: docker_script_result.stdout
+
+- name: Run installation script of kind and kubectl
+  ansible.builtin.script: setup-kind.sh
+  register: kind_script_result
+
+- name: Display Kind and kubectl script output
+  ansible.builtin.debug:
+    var: kind_script_result.stdout
