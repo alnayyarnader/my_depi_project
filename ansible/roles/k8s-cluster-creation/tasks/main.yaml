@@ -3,14 +3,17 @@
     src: kind-config.yaml
     dest: /tmp/kind-config.yaml
 
+- name: Get list of existing Kind clusters
+  ansible.builtin.shell: kind get clusters
+  register: existing_clusters
+  changed_when: false
+
 - name: Create Kind cluster using config file
   ansible.builtin.command:
     cmd: "kind create cluster --config=/tmp/kind-config.yaml"
-  register: cluster_creation
-  changed_when: "'Creating cluster' in cluster_creation.stdout"
-  failed_when: 
-    - cluster_creation.rc != 0
-    - "'already exist' not in cluster_creation.stderr"
+  when: existing_clusters.stdout | trim == ""
+  changed_when: true
+
 
 - name: Deploy Nginx Ingress Controller
   kubernetes.core.k8s:
