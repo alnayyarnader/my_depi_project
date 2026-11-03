@@ -44,14 +44,11 @@
   args:
     creates: /usr/libexec/docker/cli-plugins/docker-scout
 
-
 - name: Add remote SSH user to the docker group
   ansible.builtin.user:
     name: "{{ ansible_env.SUDO_USER | default('ubuntu') }}"
     groups: docker
     append: true
-
-
 
 - name: Ensure Docker service is enabled and started
   ansible.builtin.systemd:
@@ -59,17 +56,19 @@
     state: started
     enabled: true
 
+- name: Download and install Kind binary (v0.33.0)
+  ansible.builtin.get_url:
+    url: "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64"
+    dest: /usr/local/bin/kind
+    mode: '0755'
+    force: false
 
-
-- name: Execute kind and kubectl setup script using default shell
-  ansible.builtin.script: setup-kind.sh
-  register: kind_and_kubectl_script_result
-
-- name: Display kind and kubectl setup script output
-  ansible.builtin.debug:
-    msg: "{{ kind_and_kubectl_script_result.stdout_lines }}"
-
-
+- name: Download and install Kubectl binary (Latest Stable)
+  ansible.builtin.get_url:
+    url: "https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+    force: false
 
 - name: Verify Docker, Kind, and Kubectl installation
   ansible.builtin.shell: |
@@ -91,12 +90,6 @@
     kubectl version --client
   register: docker_verification_result
   changed_when: false
-
-- name: Display verification output
-  ansible.builtin.debug:
-    var: docker_verification_result.stdout_lines
-
-
 
 - name: Display verification output
   ansible.builtin.debug:
