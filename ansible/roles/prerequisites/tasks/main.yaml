@@ -62,7 +62,7 @@
 
 
 - name: Execute kind and kubectl setup script using default shell
-  ansible.builtin.script: kind-setup.sh
+  ansible.builtin.script: setup-kind.sh
   register: kind_and_kubectl_script_result
 
 - name: Display kind and kubectl setup script output
