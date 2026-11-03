@@ -59,7 +59,19 @@
     state: started
     enabled: true
 
-- name: Verify Docker installation, permissions, and plugins
+
+
+- name: Execute kind and kubectl setup script using default shell
+  ansible.builtin.script: kind-setup.sh
+  register: kind_and_kubectl_script_result
+
+- name: Display kind and kubectl setup script output
+  ansible.builtin.debug:
+    msg: "{{ kind_and_kubectl_script_result.stdout_lines }}"
+
+
+
+- name: Verify Docker, Kind, and Kubectl installation
   ansible.builtin.shell: |
     echo "=== 1. Installed Packages ==="
     dpkg -l | grep docker
@@ -73,8 +85,18 @@
     sudo systemctl status docker --no-pager
     echo "=== 6. Docker Scout Version ==="
     docker scout version
+    echo "=== 7. Kind Version ==="
+    kind version
+    echo "=== 8. Kubectl Version ==="
+    kubectl version --client
   register: docker_verification_result
   changed_when: false
+
+- name: Display verification output
+  ansible.builtin.debug:
+    var: docker_verification_result.stdout_lines
+
+
 
 - name: Display verification output
   ansible.builtin.debug:
