@@ -1,5 +1,4 @@
----
-- name: Update apt cache and install prerequisite packages (Steps 1 & 4)
+- name: Update apt cache and install prerequisite packages
   ansible.builtin.apt:
     name:
       - ca-certificates
@@ -7,19 +6,19 @@
     state: present
     update_cache: true
 
-- name: Ensure Docker keyrings directory exists (Step 2)
+- name: Ensure Docker keyrings directory exists
   ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
 
-- name: Download Docker official GPG key (Step 2)
+- name: Download Docker official GPG key
   ansible.builtin.get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
     dest: /etc/apt/keyrings/docker.asc
     mode: '0644'
 
-- name: Add Docker repository using modern deb822 format (Step 3)
+- name: Add Docker repository using modern deb822 format
   ansible.builtin.deb822_repository:
     name: docker
     uris: https://download.docker.com/linux/ubuntu
@@ -28,7 +27,7 @@
     signed_by: /etc/apt/keyrings/docker.asc
     state: present
 
-- name: Install Docker engine and plugins (Step 5)
+- name: Install Docker engine and plugins
   ansible.builtin.apt:
     name:
       - docker-ce
@@ -39,17 +38,20 @@
     state: present
     update_cache: true
 
-- name: Install Docker Scout CLI plugin (Step 6)
+- name: Install Docker Scout CLI plugin
   ansible.builtin.shell: |
     curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b /usr/libexec/docker/cli-plugins
   args:
     creates: /usr/libexec/docker/cli-plugins/docker-scout
 
-- name: Add remote user to the docker group (Step 7)
+
+- name: Add remote SSH user to the docker group
   ansible.builtin.user:
-    name: "{{ ansible_user_id }}"
+    name: "{{ ansible_env.SUDO_USER | default('ubuntu') }}"
     groups: docker
     append: true
+
+
 
 - name: Ensure Docker service is enabled and started
   ansible.builtin.systemd:
