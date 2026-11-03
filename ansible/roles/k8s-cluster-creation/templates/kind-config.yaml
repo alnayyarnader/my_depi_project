@@ -18,5 +18,5 @@ nodes:
         hostPort: 80
         protocol: TCP
 
-  - role: worker
-    image: kindest/node:v1.33.0
+#  - role: worker
+#    image: kindest/node:v1.33.0
