@@ -1,9 +1,3 @@
-- name: Apply Backend PersistentVolumeClaim
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'backend-persistentvolumeclaim.yaml') | from_yaml }}"
-    validate_certs: "{{ k8s_validate_tls_certs }}"
-
 - name: Apply Backend Deployment
   kubernetes.core.k8s:
     state: present
