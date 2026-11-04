@@ -10,13 +10,21 @@
   become: true
 
 
-- name: Install Python Kubernetes client library
-  ansible.builtin.pip:
-    name: kubernetes
-    executable: pip3
+- name: Install Python Kubernetes client library via Apt
+  ansible.builtin.apt:
+    name: python3-kubernetes
     state: present
-    extra_args: "--break-system-packages"
   become: true
+
+- name: Verify Python Kubernetes module import
+  ansible.builtin.command: python3 -c "import kubernetes; print('Kubernetes Python module loaded successfully!')"
+  register: k8s_py_check
+  changed_when: false
+  become: false
+
+- name: Display Python Kubernetes verification result
+  ansible.builtin.debug:
+    var: k8s_py_check.stdout_lines
 
 
 - name: Ensure Docker keyrings directory exists
