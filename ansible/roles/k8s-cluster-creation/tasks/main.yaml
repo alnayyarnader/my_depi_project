@@ -28,7 +28,7 @@
 - name: Apply ConfigMap
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('template', 'config.yaml') | from_yaml }}"
+    definition: "{{ lookup('template', 'configmap.yaml') | from_yaml }}"
 
 - name: Apply Secrets
   kubernetes.core.k8s:
