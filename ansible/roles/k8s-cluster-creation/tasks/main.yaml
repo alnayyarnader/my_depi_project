@@ -46,11 +46,15 @@
     validate_certs: "{{ k8s_validate_tls_certs }}"
 
 
-- name: Apply ConfigMap
+- name: Apply ConfigMap (added 60s waiting time to ensure it is provision without failure due to timeout)
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'configmap.yaml') | from_yaml }}"
     validate_certs: "{{ k8s_validate_tls_certs }}"
+    wait: true
+    wait_timeout: 60
+
+
 
 - name: Apply Secrets
   kubernetes.core.k8s:
