@@ -15,25 +15,11 @@
   changed_when: true
 
 
-- name: Deploy Nginx Ingress Controller
-  kubernetes.core.k8s:
-    state: present
-    src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-
 - name: Apply Namespace
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'namespace.yaml') | from_yaml }}"
-
-- name: Apply ConfigMap
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'configmap.yaml') | from_yaml }}"
-
-- name: Apply Secrets
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'secrets.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
 
 
 - name: Deploy Rancher Local Path Provisioner
@@ -51,3 +37,28 @@
 - name: Display storage class status
   ansible.builtin.debug:
     msg: "{{ sc_check.stdout }}"
+
+
+- name: Apply StorageClass
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'storageclass.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
+
+
+- name: Apply ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'configmap.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
+
+- name: Apply Secrets
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'secrets.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
+
+- name: Deploy Nginx Ingress Controller
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml

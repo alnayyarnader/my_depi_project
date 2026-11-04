@@ -1,14 +1,23 @@
+- name: Apply Backend PersistentVolumeClaim
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'backend-persistentvolumeclaim.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
+
 - name: Apply Backend Deployment
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'backend-deployment.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
 
 - name: Apply Backend Service
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'backend-service.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
 
 - name: Apply Backend Network Policy
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'backend-network-policy.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"

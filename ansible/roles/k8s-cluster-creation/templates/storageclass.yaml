@@ -1,0 +1,6 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: "{{ app_environment }}-storageclass"
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain

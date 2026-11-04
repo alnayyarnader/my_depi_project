@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "backend-pvc"
+  namespace: "{{ app_environment }}"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "{{ app_environment }}-storageclass"
+  resources:
+    requests:
+      storage: 1.5Gi

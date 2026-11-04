@@ -1,5 +1,6 @@
 ansible_user: "ubuntu"
 app_environment: "production"
+k8s_validate_tls_certs: false
 
 # Unified 3-Tier Application Configuration
 backend_port: "5000"

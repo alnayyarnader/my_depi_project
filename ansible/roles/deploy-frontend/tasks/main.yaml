@@ -1,9 +1,18 @@
+- name: Apply Frontend PersistentVolumeClaim
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'frontend-persistentvolumeclaim.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
+
 - name: Apply Frontend Deployment
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'frontend-depolyment.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
+
 
 - name: Apply Frontend Service
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'frontend-service.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
