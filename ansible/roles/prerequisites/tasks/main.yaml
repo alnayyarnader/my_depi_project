@@ -9,12 +9,15 @@
     update_cache: true
   become: true
 
+
 - name: Install Python Kubernetes client library
   ansible.builtin.pip:
     name: kubernetes
     executable: pip3
     state: present
+    extra_args: "--break-system-packages"
   become: true
+
 
 - name: Ensure Docker keyrings directory exists
   ansible.builtin.file:
