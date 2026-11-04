@@ -25,25 +25,25 @@
 - name: Deploy Rancher Local Path Provisioner
   ansible.builtin.command:
     cmd: kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.28/deploy/local-path-storage.yaml
-  register: local_path_apply
   changed_when: "'created' in local_path_apply.stdout or 'configured' in local_path_apply.stdout"
 
-- name: Verify Local Path storage class is created
-  ansible.builtin.command:
-    cmd: kubectl get storageclass local-path
-  register: sc_check
-  changed_when: false
 
-- name: Display storage class status
-  ansible.builtin.debug:
-    msg: "{{ sc_check.stdout }}"
-
-
-- name: Apply StorageClass
+- name: Apply DB and BackEnd (Rancher local path) Storage Class
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'storageclass.yaml') | from_yaml }}"
     validate_certs: "{{ k8s_validate_tls_certs }}"
+
+
+- name: Query all Storage Classes status
+  ansible.builtin.command:
+    cmd: kubectl get storageclass
+  register: sc_check
+  changed_when: false
+
+- name: Display all Storage Classes status
+  ansible.builtin.debug:
+    msg: "{{ sc_check.stdout }}"
 
 
 - name: Apply ConfigMap (added 60s waiting time to ensure it is provision without failure due to timeout)
@@ -53,7 +53,6 @@
     validate_certs: "{{ k8s_validate_tls_certs }}"
     wait: true
     wait_timeout: 60
-
 
 
 - name: Apply Secrets
