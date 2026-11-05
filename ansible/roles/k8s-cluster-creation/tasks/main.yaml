@@ -67,12 +67,3 @@
   kubernetes.core.k8s:
     state: present
     src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-
-
-- name: Wait for Nginx Ingress Controller Webhook to be Ready
-  ansible.builtin.command:
-    cmd: "kubectl wait --namespace {{ app_environment }} --for=condition=ready pod --selector=app=frontend --timeout=90s"
-  register: ingress_wait
-  retries: 3
-  delay: 10
-  until: ingress_wait.rc == 0

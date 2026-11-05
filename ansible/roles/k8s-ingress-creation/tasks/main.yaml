@@ -1,5 +1,0 @@
-- name: Apply ingress manifest dynamically based on the chosen environment
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'ingress.yaml') | from_yaml }}"
-    validate_certs: "{{ k8s_validate_tls_certs }}"

@@ -10,3 +10,19 @@
     state: present
     definition: "{{ lookup('template', 'frontend-service.yaml') | from_yaml }}"
     validate_certs: "{{ k8s_validate_tls_certs }}"
+
+
+- name: Wait for Nginx Ingress Controller Webhook to be Ready
+  ansible.builtin.command:
+    cmd: "kubectl wait --namespace {{ app_environment }} --for=condition=ready pod --selector=app=frontend --timeout=90s"
+  register: ingress_wait
+  retries: 3
+  delay: 10
+  until: ingress_wait.rc == 0
+
+
+- name: Apply ingress manifest dynamically based on the chosen environment
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'ingress.yaml') | from_yaml }}"
+    validate_certs: "{{ k8s_validate_tls_certs }}"
