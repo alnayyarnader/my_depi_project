@@ -75,7 +75,7 @@ resource "aws_instance" "my_server" {
   }
 
   root_block_device {
-    volume_size           = 8
+    volume_size           = 15
     volume_type           = "gp3"
     delete_on_termination = true
   }
