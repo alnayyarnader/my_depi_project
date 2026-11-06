@@ -39,20 +39,19 @@ jobs:
     if: github.event_name == 'push' || github.event.inputs.action == 'deploy'
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Repository
+    - name: 1. Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
+    - name: 2. Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Docker Hub
+    - name: 3. Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-    # Build and Push Backend Image
-    - name: Build and Push Backend
+    - name: 4. Build and Push Backend Image
       uses: docker/build-push-action@v5
       with:
         context: ./backend
@@ -62,8 +61,8 @@ jobs:
           ${{ secrets.DOCKER_HUB_USERNAME }}/depi-backend:latest
           ${{ secrets.DOCKER_HUB_USERNAME }}/depi-backend:${{ github.sha }}
 
-    # Build and Push Frontend Image
-    - name: Build and Push Frontend
+  
+    - name: 4. Build and Push Frontend Image
       uses: docker/build-push-action@v5
       with:
         context: ./frontend
@@ -74,7 +73,7 @@ jobs:
           ${{ secrets.DOCKER_HUB_USERNAME }}/depi-frontend:${{ github.sha }}
 
 
-  provisioning-and-deployment:
+  provision-and-deploy:
     name: "Run Action: ${{ github.event.inputs.action || 'deploy' }}"
     runs-on: ubuntu-latest
     needs: [build-and-push]
@@ -121,21 +120,21 @@ jobs:
       # =========================================================================
       # PROVISION INFRASTRUCTURE VIA TERRAFORM and CONFIGURE IT VIA ANSIBLE
       # =========================================================================
-      - name: 1. Provision AWS Infrastructure (Terraform Apply)
+      - name: 4. Provision AWS Infrastructure (Terraform Apply)
         if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         working-directory: ./terraform
         run: |
           terraform apply -auto-approve
           echo "EC2_IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
 
-      - name: 2. Configure SSH Key for Ansible
+      - name: 5. Configure SSH Key for Ansible
         if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPI_LOCALLY_GENERATED_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: 3. Inject EC2_IP into Ansible hosts.yaml & Wait for SSH
+      - name: 6. Inject EC2_IP into Ansible hosts.yaml & Wait for SSH
         if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         env:
           TARGET_ENV: ${{ github.event.inputs.target_env || 'production' }}
@@ -153,18 +152,20 @@ jobs:
           echo "Waiting for SSH port 22 on $EC2_IP..."
           timeout 120 bash -c "until nc -z -v -w5 $EC2_IP 22; do sleep 5; done"
 
-      - name: 4. Install Ansible and Kubernetes Python Client
+      - name: 7. Install Ansible and Kubernetes Python Client
+        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         run: |
           python -m pip install --upgrade pip
           pip install ansible "kubernetes>=24.2.0"
 
 
 
-      - name: 5. Install Ansible Collections  (kubernetes core)
+      - name: 8. Install Ansible Collections  (kubernetes core)
+        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         run: ansible-galaxy collection install -r ansible/requirements.yaml
 
 
-      - name: 6. Run Ansible Playbook (Decrypt Vault in RAM)
+      - name: 9. Run Ansible Playbook (Decrypt Vault in RAM)
         if: ${{ github.event_name == 'push' || github.event.inputs.action == 'deploy' }}
         working-directory: ./ansible
         env:
