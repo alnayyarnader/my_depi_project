@@ -28,9 +28,13 @@ spec:
       port: {{ db_port }}
 
 
-  # --- DNS Resolution without external naming ---
+  # to allow DNS Resolution so that Backend can connect to the K8S DNS server and
+  # resolve DB_HOSTNAME (database-svc) and connect to DB
   - to:
-    - podSelector:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
         matchLabels:
           k8s-app: kube-dns
     ports:
