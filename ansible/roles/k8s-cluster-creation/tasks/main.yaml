@@ -22,15 +22,7 @@
     validate_certs: "{{ k8s_validate_tls_certs }}"
 
 
-- name: Deploy Rancher Local Path Provisioner
-  ansible.builtin.command:
-    cmd: kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.28/deploy/local-path-storage.yaml
-  register: local_path_apply
-  changed_when: "'created' in local_path_apply.stdout or 'configured' in local_path_apply.stdout"
-
-
-
-- name: Apply DB and BackEnd (Rancher local path) Storage Class
+- name: Apply DB (type=Rancher local path) Storage Class
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'storageclass.yaml') | from_yaml }}"
