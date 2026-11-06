@@ -16,4 +16,4 @@ spec:
           app: backend   # ONLY allow incoming traffic from pods labeled 'backend'
     ports:
     - protocol: TCP
-      port: 5432
+      port: {{ db_port }}

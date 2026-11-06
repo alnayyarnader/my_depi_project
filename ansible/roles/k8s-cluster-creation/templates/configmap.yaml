@@ -4,8 +4,16 @@ metadata:
   name: "{{ app_environment }}-configmap"
   namespace: "{{ app_environment }}"
 data:
+  APP_NAMESPACE: "{{ app_environment }}"
+  FRONTEND_HOST: "{{ frontend_host }}"
+  FRONTEND_PORT: "{{ frontend_port }}"
+  BACKEND_HOST: "{{ backend_host }}"
   BACKEND_PORT: "{{ backend_port }}"
   DB_HOST: "{{ db_host }}"
   DB_PORT: "{{ db_port }}"
   DB_NAME: "{{ db_name }}"
   DB_USER: "{{ db_user }}"
+  # Standard PostgreSQL image variables
+  PGPORT: "{{ db_port }}"
+  POSTGRES_DB: "{{ db_name }}"
+  POSTGRES_USER: "{{ db_user }}"

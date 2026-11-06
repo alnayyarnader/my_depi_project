@@ -12,6 +12,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: frontend-svc
+            name: {{ frontend_host }}
             port:
-              number: 80
+              number: {{ frontend_port }}

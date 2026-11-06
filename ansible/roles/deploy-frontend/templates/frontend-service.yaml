@@ -4,9 +4,10 @@ metadata:
   name: frontend-svc
   namespace: "{{ app_environment }}"
 spec:
+  type: ClusterIP
   selector:
     app: frontend
   ports:
-  - port: 80
-    targetPort: 80
-  type: ClusterIP
+    - protocol: TCP
+      port: {{ frontend_port }}
+      targetPort: {{ frontend_port }}

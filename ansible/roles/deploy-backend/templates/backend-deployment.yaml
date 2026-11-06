@@ -17,7 +17,7 @@ spec:
       - name: backend
         image: alnayyarnader/depi-backend:latest
         ports:
-        - containerPort: 5000
+        - containerPort: {{ backend_port }}
         envFrom:
         - configMapRef:
             name: "{{ app_environment }}-configmap"

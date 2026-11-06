@@ -4,9 +4,10 @@ metadata:
   name: backend-svc
   namespace: "{{ app_environment }}"
 spec:
+  type: ClusterIP
   selector:
     app: backend
   ports:
-  - port: 80
-    targetPort: 5000
-  type: ClusterIP
+    - protocol: TCP
+      port: {{ backend_port }}
+      targetPort: {{ backend_port }}

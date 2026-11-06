@@ -17,7 +17,7 @@ spec:
           app: frontend    # ONLY allow incoming traffic from pods labeled 'frontend'
     ports:
     - protocol: TCP
-      port: 5000
+      port: {{ backend_port }}
   egress:
   - to:
     - podSelector:
@@ -25,4 +25,16 @@ spec:
           app: database  # ONLY allow outgoing traffic to pods labeled 'database'
     ports:
     - protocol: TCP
-      port: 5432
+      port: {{ db_port }}
+
+
+  # --- DNS Resolution without external naming ---
+  - to:
+    - podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

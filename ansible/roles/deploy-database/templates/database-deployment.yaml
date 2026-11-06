@@ -17,7 +17,7 @@ spec:
       - name: database
         image: postgres:15-alpine
         ports:
-        - containerPort: 5432
+        - containerPort: {{ db_port }}
         envFrom:
         - configMapRef:
             name: "{{ app_environment }}-configmap"

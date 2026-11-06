@@ -1,10 +1,13 @@
-ansible_user: "ubuntu"
-app_environment: "production"
+ansible_user: ubuntu
+app_environment: production
 k8s_validate_tls_certs: false
 
 # Unified 3-Tier Application Configuration
-backend_port: "5000"
-db_host: "database-svc"
-db_port: "5432"
-db_name: "postgres"
-db_user: "postgres"
+frontend_host: frontend-svc
+frontend_port: 80
+backend_host: backend-svc
+backend_port: 5000
+db_host: database-svc
+db_port: 5432
+db_name: postgres
+db_user: postgres

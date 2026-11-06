@@ -17,7 +17,7 @@ spec:
       - name: frontend
         image: alnayyarnader/depi-frontend:latest
         ports:
-        - containerPort: 80
+        - containerPort: {{ frontend_port }}
         envFrom:
         - configMapRef:
             name: "{{ app_environment }}-configmap"
