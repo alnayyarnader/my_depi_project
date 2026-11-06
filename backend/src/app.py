@@ -12,7 +12,7 @@ DB_PORT = os.environ["DB_PORT"]
 DB_NAME = os.environ["DB_NAME"]
 DB_USER = os.environ["DB_USER"]
 DB_PASS = os.environ["DB_PASS"]
-BACKEND_PORT = int(os.environ["BACKEND_PORT"])
+BACKEND_PORT = int(os.environ.get("BACKEND_PORT", 5000))
 
 def get_db_connection():
     return psycopg2.connect(
@@ -24,7 +24,7 @@ def get_db_connection():
     )
 
 def init_db():
-    retries = 10
+    retries = 15
     while retries > 0:
         try:
             conn = get_db_connection()
@@ -44,8 +44,13 @@ def init_db():
             print(f"Waiting for database... ({e})")
             retries -= 1
             time.sleep(3)
+    print("Warning: Could not initialize database schema during startup. Will retry on requests.")
 
-init_db()
+# Wrap initialization safely to prevent worker import blocking
+try:
+    init_db()
+except Exception as e:
+    print(f"Skipping blocking init_db during import: {e}")
 
 @app.route('/api/records', methods=['GET'])
 def get_records():
