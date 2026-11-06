@@ -4,3 +4,8 @@ metadata:
   name: "{{ app_environment }}-storageclass"
 provisioner: rancher.io/local-path
 reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+# When using the rancher.io/local-path provisioner without setting the "volumeBindingMode", Kubernetes defaults to Immediate. 
+# This tells the provisioner to try and create the physical storage volume the exact millisecond the PVC is created, before a pod 
+# has even been scheduled to a node.
+# and Because no node has claimed the PVC yet, the provisioner throws the no node was specified configuration error
